@@ -41,7 +41,7 @@ class AppendStringRange(argparse.Action):
             message = 'requires 2 arguments'
         else:
             # optional: likwid region(s) for which this variable is specified
-            m = re.match(r'(?:(?P<region>(\D\w*,)*\D\w*):)?' 
+            m = re.match(r'(?:(?P<region>(\D[^\s:]*,)*\D[^\s:]*):)?'
                          r'(?:(?P<start_var>[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?)?:?)'
                          r'(?:(?P<stop_var>[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?)?\:?)?'
                          r'(?:(?P<scale_var>log|lin)?)?', values[1])
@@ -52,7 +52,8 @@ class AppendStringRange(argparse.Action):
                 if gd['start_var'] is not None:
 
                     # get likwid region(s)
-                    regions = gd['region'].split(',') if gd['region'] is not None else ['']
+                    regions = gd['region'].split(
+                        ',') if gd['region'] is not None else ['']
                     variables['region'] = regions
 
                     start = float(gd['start_var'])
@@ -103,7 +104,7 @@ class AppendLoopRange(argparse.Action):
         message = ''
 
         # optional: likwid region(s) for which this loop range is specified
-        m = re.match(r'(?:(?P<region>(\D\w*,)*\D\w*):)?'
+        m = re.match(r'(?:(?P<region>(\D[^\s:]*,)*\D[^\s:]*):)?'
                      # lower bound of loop
                      r'(?P<start>\d+\.?\d*):'
                      # optional: step size
@@ -112,22 +113,23 @@ class AppendLoopRange(argparse.Action):
                      r'(?P<end>\d+\.?\d*)'
                      # optional: variable that is responsible for the loop length this is needed,
                      # when an adjustable variable controls the upper bound of a loop
-                     r'(:(?P<variable>\D\S*))?', 
+                     r'(:(?P<variable>\D\S*))?',
                      values, flags=re.VERBOSE)
         if m:
             gd = m.groupdict()
 
             # get (optional) region(s), defaults to empty string
-            regions = gd['region'].split(',') if gd['region'] is not None else ['']
+            regions = gd['region'].split(
+                ',') if gd['region'] is not None else ['']
 
             if gd['step'] is None:
                 gd['step'] = 1
             try:
                 start = int(gd['start'])
-                end   = int(gd['end'])
-                step  = int(gd['step'])
+                end = int(gd['end'])
+                step = int(gd['step'])
 
-                values = {'start': start, 'end': end, 'step': step, 'variable': gd['variable'], 
+                values = {'start': start, 'end': end, 'step': step, 'variable': gd['variable'],
                           'offset': None}
             except ValueError:
                 print("Pattern of loop range must match "
@@ -168,19 +170,21 @@ class AppendRepetitionDefines(argparse.Action):
             message = 'requires 1 argument'
         else:
             # optionally: likwid region(s) for which the number of repetitions is defined
-            m = re.match(r'(?:(?P<region>(\D\w*,)*\D\w*):)?'    
-                         # qualifier for the repetitions. Can either be a fixed number, a variable 
+            m = re.match(r'(?:(?P<region>(\D[^\s:]*,)*\D[^\s:]*):)?'
+                         # qualifier for the repetitions. Can either be a fixed number, a variable
                          # name or the specifier 'marker'
-                         r'(?P<qualifier>\w+)$',                
+                         r'(?P<qualifier>\w+)$',
                          values)
             if m:
                 gd = m.groupdict()
                 try:
-                    regions = gd['region'].split(',') if gd['region'] is not None else ['']
+                    regions = gd['region'].split(
+                        ',') if gd['region'] is not None else ['']
                     qualifier = gd['qualifier']
 
                 except ValueError:
-                    print("Pattern of loop range must match '[[...,]region:]qualifier'")
+                    print(
+                        "Pattern of loop range must match '[[...,]region:]qualifier'")
             else:
                 message = "argument must match: '[[...,]region:]qualifier'"
 
@@ -204,6 +208,7 @@ class AppendFlops(argparse.Action):
     A flop description mist have the following format: '[[...,]region:]flops'.
     If no region is defined, it is assumed that the number of flops holds for all regions (?!)
     """
+
     def __call__(self, parser, namespace, values, option_string=None):
         """Execute action."""
 
@@ -214,7 +219,7 @@ class AppendFlops(argparse.Action):
         if len(values) == 0:
             message = 'requires 1 argument'
         else:
-            m = re.match(r'(?:(?P<region>(\D\w*,)*\D\w*):)?(?P<flops>\d+)$',
+            m = re.match(r'(?:(?P<region>(\D[^\s:]*,)*\D[^\s:]*):)?(?P<flops>\d+)$',
                          values)
             if m:
                 gd = m.groupdict()
@@ -248,6 +253,7 @@ class ParseMarkers(argparse.Action):
     """
     Splits the given likwid marker if any given.
     """
+
     def __call__(self, parser, namespace, values, option_string=None):
         """Execute action."""
 
@@ -265,9 +271,10 @@ def create_parser():
     parser = argparse.ArgumentParser(
         description="Kerncraft's stand-alone benchmarking tool.",
         epilog='For help, examples, documentation, and bug reports go to '
-                  'https://github.com/RRZE-HPC/kerncraft\nLicense: AGPLv3')
+        'https://github.com/RRZE-HPC/kerncraft\nLicense: AGPLv3')
 
-    parser.add_argument('--version', action='version', version='%(prog)s {}'.format(__version__))
+    parser.add_argument('--version', action='version',
+                        version='%(prog)s {}'.format(__version__))
     parser.add_argument('--machine', '-m', type=argparse.FileType('r'), required=True,
                         help='Path to machine description yaml file.')
     parser.add_argument('--define', '-D', nargs=2, metavar=('KEY', 'VALUE'), default=OrderedDict(),
@@ -294,8 +301,8 @@ def create_parser():
                         help='Compiler to use, default is first in machine description file.')
     parser.add_argument('--compiler-flags', type=str, default=None,
                         help='Compiler flags to use. If not set, flags are taken from machine '
-                            'description file (-std=c99 is always added).')
-    parser.add_argument('--datatype', metavar='DATATYPE', type=str, choices=['float', 'double'], 
+                        'description file (-std=c99 is always added).')
+    parser.add_argument('--datatype', metavar='DATATYPE', type=str, choices=['float', 'double'],
                         default='double',
                         help="Datatype of sources and destinations of the kernel. Defaults to "
                              "'double'.")
@@ -317,10 +324,12 @@ def create_parser():
                         default={'use_marker': False, 'region': ['']},
                         help='Benchmark using likwid markers.')
 
-    ag = parser.add_argument_group('arguments for stand-alone benchmark model', 'benchmark')
+    ag = parser.add_argument_group(
+        'arguments for stand-alone benchmark model', 'benchmark')
     StandaloneBenchmark.configure_arggroup(ag)
 
     return parser
+
 
 def check_arguments(args, parser):
     """Check arguments passed by user that are not checked by argparse itself."""
@@ -329,7 +338,8 @@ def check_arguments(args, parser):
     if not args.unit:
         args.unit = 'cy/CL'
 
-def run(parser, args, output_file = sys.stdout):
+
+def run(parser, args, output_file=sys.stdout):
     """Run command line interface."""
     # try loading  results file (if requested)
     result_storage = {}
@@ -342,7 +352,7 @@ def run(parser, args, output_file = sys.stdout):
         args.store.close()
 
     # read machine description
-    machine  = MachineModel(args.machine.name, args=args)
+    machine = MachineModel(args.machine.name, args=args)
 
     # process kernel description
     kernel = BinaryDescription(args=args, machine=machine)
@@ -362,20 +372,21 @@ def run(parser, args, output_file = sys.stdout):
     model.analyze()
 
     # print header
-    print('\n\n{:^80}'.format(' stand-alone kerncraft benchmark '), file=output_file)
+    print('\n\n{:^80}'.format(
+        ' stand-alone kerncraft benchmark '), file=output_file)
     print('{:<40}{:>40}'.format(kernel.binary, ' -m ' + args.machine.name),
           file=output_file)
-    print(' '.join(['-D {} {}'.format(k, v['value']) for k, v in args.define.items()]), 
+    print(' '.join(['-D {} {}'.format(k, v['value']) for k, v in args.define.items()]),
           file=output_file)
     print('{:-^80}'.format(' ' + args.binary + ' '), file=output_file)
 
     if args.verbose > 1:
-        kernel.print_kernel_info(output_file = output_file)
+        kernel.print_kernel_info(output_file=output_file)
 
     if args.verbose > 0:
-        kernel.print_constants_info(output_file = output_file)
+        kernel.print_constants_info(output_file=output_file)
 
-    model.report(output_file = output_file)
+    model.report(output_file=output_file)
 
     # add results to storage
     bin_name = os.path.split(kernel.binary)[1]
@@ -383,9 +394,10 @@ def run(parser, args, output_file = sys.stdout):
         result_storage[bin_name] = {}
     if tuple(kernel.constants.items()) not in result_storage[bin_name]:
         result_storage[bin_name][tuple(kernel.constants.items())] = {}
-    result_storage[bin_name][tuple(kernel.constants.items())][model.name] = model.results
+    result_storage[bin_name][tuple(
+        kernel.constants.items())][model.name] = model.results
 
-    print('', file = output_file)
+    print('', file=output_file)
 
     # save storage to file (if requested)
     if args.store:
